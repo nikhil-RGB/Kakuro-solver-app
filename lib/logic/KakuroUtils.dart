@@ -1,7 +1,7 @@
 import 'dart:math';
 
 void main() {
-  KakuroUtils.runTest(23, 3, "006");
+  KakuroUtils.runTest(30, 4, "0086");
 }
 
 //This class contains static utility functions for generating valid number sequences to be filled into
@@ -19,7 +19,7 @@ class KakuroUtils {
 
   //Returns a list of number sequences each of whose digits add up to sum, have g_boxes number of digits and
   //match constraint 'constraint'. Constraints are sequences already present on the board. 0 is a constraint number
-  //serves as a placeholder for 'empty'.
+  //that serves as a placeholder for 'empty'.
   static List<int> permuteSum(int sum, int gboxes, String constraint) {
     if (!isValidSequence(int.parse(constraint.replaceAll("0", "")))) {
       //Constraint is invalid, throw the associated board out of eval by immediately returning an empty list.
