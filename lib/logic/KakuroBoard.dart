@@ -86,6 +86,8 @@ class KakuroBoard {
   //This function allows for filling in of sample board, allowing it
   //to act as the root node for a game tree, explored via depth first
   //search.
+  //PS: This function is stinky POOPOO. It does not work correctly because isntead of correctly backtracking it just steamrolls though the i,j coords without examining all possible states.
+  //I am very stupid, but am trying to fix this now.
   List<List<String>> solveBoard() {
     List<List<List<String>>> boards = [];
     boards.add(this.referenceBoard);
@@ -168,4 +170,7 @@ class KakuroBoard {
     }
     return boards[0];
   }
+
+  //Function that solves the board recursively
+  List<KakuroBoard> solve() {}
 }
