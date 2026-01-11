@@ -202,8 +202,13 @@ class KakuroBoard {
   //   return boards[0];
   // }
 
-  //Function that checks if a board is fully solved
+  //Function that checks if a board is fully solved and that the parse location is pointing
+  //to the end.
   bool isSolved() {
+    if ((parseLocation.x.toInt() != (this.ROW_COUNT - 1)) ||
+        (parseLocation.y.toInt() != (this.COLUMN_COUNT - 1))) {
+      return false;
+    }
     for (int i = 0; i < ROW_COUNT; ++i) {
       for (int j = 0; j < COLUMN_COUNT; ++j) {
         String content = this.referenceBoard[i][j];
@@ -222,7 +227,12 @@ class KakuroBoard {
     boards.add(cloneBoard(original));
     MAIN_LOOP:
     while (boards.isNotEmpty) {
-      //keep solving
+      // keep solving
+      // temporary error throw to inspect the infinite loop issue in larger boards
+      // if (runs > 10000) {
+      //   print("What the fuck is goin on here");
+      //   throw "Stop this fucking shit lol";
+      // }
       KakuroBoard currentBoard = boards[0];
       print("Board under eval at run $runs");
       currentBoard.printBoard();
@@ -371,6 +381,18 @@ void runSolveTest() {
     ["5 -1", "0", "0", "-1", "-1"]
   ];
 
+  List<List<String>> complexTestBoard = [
+    ["-1", "-1", "-1 10", "-1 33", "-1", "-1 15", "-1 10", "-1 12", "-1 22"],
+    ["-1", "5 10", "0", "0", "27 27", "0", "0", "0", "0"],
+    ["36 -1", "0", "0", "0", "0", "0", "0", "0", "0"],
+    ["30 -1", "0", "0", "0", "0", "-1 22", "17 22", "0", "0"],
+    ["-1", "-1", "30 -1", "0", "0", "0", "0", "-1", "-1"],
+    ["-1", "-1 11", "12 20", "0", "0", "0", "0", "-1 8", "-1 6"],
+    ["5 -1", "0", "0", "-1 5", "11 6", "0", "0", "0", "0"],
+    ["38 -1", "0", "0", "0", "0", "0", "0", "0", "0"],
+    ["15 -1", "0", "0", "0", "0", "13 -1", "0", "0", "-1"],
+  ];
+
   KakuroBoard initialBoard =
       KakuroBoard(referenceBoard: testBoardGrid, ROW_COUNT: 5, COLUMN_COUNT: 5);
 
@@ -398,24 +420,4 @@ void runSolveTest() {
   //   print("\n--- Invalid Board \n ${e.toString()} ---");
   //   print(e);
   // }
-}
-
-void runSolveTest2() {
-  List<List<String>> testBoardGrid = [
-    ["-1", "-1", "-1", "-1 22", "-1 17"],
-    ["-1", "-1", "16 19", "0", "0"],
-    ["-1", "24 9", "0", "0", "0"],
-    ["22 -1", "0", "0", "0", "-1"],
-    ["5 -1", "0", "0", "-1", "-1"]
-  ];
-  KakuroBoard initialBoard =
-      KakuroBoard(referenceBoard: testBoardGrid, ROW_COUNT: 5, COLUMN_COUNT: 5);
-
-  print("--- Starting Kakuro Solver ---");
-  print("Initial Board State:");
-
-  for (var row in initialBoard.referenceBoard) {
-    print(row.join("  "));
-  }
-  print("\n\n");
 }
