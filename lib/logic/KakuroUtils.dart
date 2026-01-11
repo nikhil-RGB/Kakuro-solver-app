@@ -1,7 +1,6 @@
-import 'dart:math';
-
 void main() {
-  KakuroUtils.runTest(30, 4, "0000");
+  // KakuroUtils.runTest(9, 1, "0");
+  testPermuteSum();
 }
 
 //This class contains static utility functions for generating valid number sequences to be filled into
@@ -40,7 +39,7 @@ class KakuroUtils {
     int min = int.parse(mins);
     int max = int.parse(maxs);
     SEQUENCE_ITERATOR:
-    for (; min < max; ++min) {
+    for (; min <= max; ++min) {
       if (min.toString().contains("0")) {
         continue SEQUENCE_ITERATOR;
       }
@@ -101,4 +100,18 @@ class KakuroUtils {
     }
     return true;
   }
+}
+
+void testPermuteSum() {
+  print("Test 1: permuteSum(16, 2, '00')");
+  List<int> result1 = KakuroUtils.permuteSum(16, 2, "00");
+  print("Result: $result1"); // Should be [79, 97]
+
+  print("\nTest 2: permuteSum(16, 2, '58')");
+  List<int> result2 = KakuroUtils.permuteSum(16, 2, "58");
+  print("Result: $result2"); // Should be [] (empty)
+
+  print("\nTest 3: permuteSum(13, 2, '00')");
+  List<int> result3 = KakuroUtils.permuteSum(13, 2, "00");
+  print("Result: $result3"); // Should include 58, 85, etc.
 }
