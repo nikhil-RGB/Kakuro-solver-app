@@ -6,9 +6,12 @@
 //If X or Y is -1 it means that either the right sum or vertical sum is invalid.
 // ignore_for_file: unnecessary_this
 
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:kakuro_solver/logic/KakuroUtils.dart';
+import 'package:kakuro_solver/models/CellInfo.dart';
+import 'package:kakuro_solver/models/SumCellInfo.dart';
 
 void main() {
   runSolveTest();
@@ -358,9 +361,79 @@ class KakuroBoard {
     throw UnsolvableBoardException("null return from solve method");
   }
 
+  //Prints the board for debugging
   printBoard() {
     for (var row in this.referenceBoard) {
       print(row.join("  "));
+    }
+  }
+
+  //returns a map with data for every non sum cell
+//cell data includes position, associated horizontal and vertical runs, alongside their sums
+//Check CellInfo.dart for more information
+  static LinkedHashMap<Point, CellInfo> buildReferenceMap(
+      KakuroBoard refBoard) {
+    LinkedHashMap<Point, CellInfo> referenceMap = LinkedHashMap();
+    for (int i = 0; i < refBoard.ROW_COUNT; ++i) {
+      for (int j = 0; j < refBoard.COLUMN_COUNT; ++j) {
+        String content = refBoard.referenceBoard[i][j];
+        if (content.contains(" ") || content == "-1") {
+          continue;
+        }
+        Point cell_point = Point(i, j);
+        CellInfo cell_info = CellInfo(board: refBoard, position: cell_point);
+        referenceMap[cell_point] = cell_info;
+      }
+    }
+    return referenceMap;
+  }
+
+//This function returns all the possible solutions to a particular
+//cell after checking both horizontal and vertical runs, this function is
+//crucial to the new solver function
+  List<int> solveAt(CellInfo cell_info) {
+    String row_constraint = "";
+    String col_constraint = "";
+    cell_info.rightRun.forEach((element) {
+      row_constraint +=
+          this.referenceBoard[element.x.toInt()][element.y.toInt()];
+    });
+    cell_info.downRun.forEach((element) {
+      col_constraint +=
+          this.referenceBoard[element.x.toInt()][element.y.toInt()];
+    });
+    List<int> horizontal_combns = (cell_info.associated_hsum == -1)
+        ? []
+        : KakuroUtils.permuteSum(cell_info.associated_hsum,
+                cell_info.rightRun.length, row_constraint)
+            .map((e) {
+              String combn = e.toString();
+              combn = combn[cell_info.horizontalRunIndex];
+              return int.parse(combn);
+            })
+            .toSet()
+            .toList();
+    List<int> vertical_combns = (cell_info.associated_vsum == -1)
+        ? []
+        : KakuroUtils.permuteSum(cell_info.associated_vsum,
+                cell_info.downRun.length, col_constraint)
+            .map((e) {
+              String combn = e.toString();
+              combn = combn[cell_info.verticalRunIndex];
+              return int.parse(combn);
+            })
+            .toSet()
+            .toList();
+    if (cell_info.associated_hsum == -1) {
+      return vertical_combns;
+    } else if (cell_info.associated_vsum == -1) {
+      return horizontal_combns;
+    } else if (vertical_combns.isEmpty || horizontal_combns.isEmpty) {
+      return [];
+    } else {
+      return horizontal_combns
+          .where((element) => vertical_combns.contains(element))
+          .toList();
     }
   }
 }
@@ -396,7 +469,17 @@ void runSolveTest() {
   KakuroBoard initialBoard =
       KakuroBoard(referenceBoard: testBoardGrid, ROW_COUNT: 5, COLUMN_COUNT: 5);
 
-  print("--- Starting Kakuro Solver ---");
+  print("DEBUG INFO FOR CellInfo.dart:");
+
+  //Testing solveAt() function-->
+  CellInfo testobj = CellInfo(position: const Point(2, 2), board: initialBoard);
+  testobj.debugPrint();
+  print("\n\n");
+  List<int> testSolns = initialBoard.solveAt(testobj);
+  print(
+      "All solutions at ${testobj.position.toString()} for h_sum ${testobj.associated_hsum} and v_sum ${testobj.associated_vsum} are \n ${testSolns}");
+  //end testing and debugging for solveAt()
+  print("\n\n--- Starting Kakuro Solver ---");
   print("Initial Board State:");
 
   for (var row in initialBoard.referenceBoard) {
