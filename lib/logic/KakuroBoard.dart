@@ -436,6 +436,68 @@ class KakuroBoard {
           .toList();
     }
   }
+
+  //This function checks if a board is filled
+  //Replaces the isSolved() function for the cell-based MRV approach
+  bool isBoardFilled() {
+    for (int i = 0; i < this.ROW_COUNT; ++i) {
+      for (int j = 0; j < this.COLUMN_COUNT; ++j) {
+        String content = this.referenceBoard[i][j];
+        if (content == "0") {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  //Returns the location of the next cell to be solved for based on the
+  //MRV heuristic(Minimum Remaining Values)
+  Point mrvSelect(LinkedHashMap<Point, CellInfo> cellMap) {
+    int min_choices = 20;
+    Point min_location = Point(0, 0);
+    cellMap.forEach((cell_location, cell_info) {
+      String cell_content =
+          this.referenceBoard[cell_location.x.toInt()][cell_location.y.toInt()];
+      if (cell_content == "0") {
+        int sols_count = this.solveAt(cell_info).length;
+        if (sols_count < min_choices) {
+          min_choices = sols_count;
+          min_location = cell_location;
+        }
+      }
+    });
+    return min_location;
+  }
+
+  //This function solves the board with a cell-based approach
+  //instead of a run based one, whilst also employing MRV for
+  //cell selection and forward checking.
+  KakuroBoard cellBasedSolve() {
+    LinkedHashMap<Point, CellInfo> cellMap =
+        KakuroBoard.buildReferenceMap(this);
+    List<KakuroBoard> boards = List.empty(growable: true);
+    boards.add(this);
+    while (boards.isNotEmpty) {
+      KakuroBoard currentBoard = boards[0];
+      if (currentBoard.isBoardFilled()) {
+        return currentBoard;
+      }
+      Point target = currentBoard.mrvSelect(cellMap);
+      List<int> solns = currentBoard.solveAt(cellMap[target]!);
+      List<KakuroBoard> sol_boards = List.empty(growable: true);
+      for (int soln in solns) {
+        KakuroBoard sol_b = KakuroBoard.cloneBoard(currentBoard);
+        sol_b.referenceBoard[target.x.toInt()][target.y.toInt()] =
+            soln.toString();
+        sol_boards.add(sol_b);
+      }
+      boards.removeAt(0);
+      boards.insertAll(0, sol_boards);
+    }
+
+    throw UnsolvableBoardException("No valid solutions found");
+  }
 }
 
 //an object of this class being thrown indicates that board is unsolvable
@@ -466,8 +528,8 @@ void runSolveTest() {
     ["15 -1", "0", "0", "0", "0", "13 -1", "0", "0", "-1"],
   ];
 
-  KakuroBoard initialBoard =
-      KakuroBoard(referenceBoard: testBoardGrid, ROW_COUNT: 5, COLUMN_COUNT: 5);
+  KakuroBoard initialBoard = KakuroBoard(
+      referenceBoard: complexTestBoard, ROW_COUNT: 9, COLUMN_COUNT: 9);
 
   print("DEBUG INFO FOR CellInfo.dart:");
 
@@ -488,7 +550,7 @@ void runSolveTest() {
   print("\n\n");
 
   try {
-    KakuroBoard solvedBoard = KakuroBoard.solve(initialBoard);
+    KakuroBoard solvedBoard = initialBoard.cellBasedSolve();
 
     print("\n--- Solution Found! ---");
     // Print the entire solved grid for verification
