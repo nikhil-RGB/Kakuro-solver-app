@@ -14,7 +14,8 @@ import 'package:kakuro_solver/models/CellInfo.dart';
 import 'package:kakuro_solver/models/SumCellInfo.dart';
 
 void main() {
-  runSolveTest();
+  // runSolveTest();
+  runTimedSolveTest();
 }
 
 class KakuroBoard {
@@ -237,17 +238,17 @@ class KakuroBoard {
       //   throw "Stop this fucking shit lol";
       // }
       KakuroBoard currentBoard = boards[0];
-      print("Board under eval at run $runs");
-      currentBoard.printBoard();
+      // print("Board under eval at run $runs");
+      // currentBoard.printBoard();
       if (currentBoard.isSolved()) {
         return currentBoard;
       }
       List<List<Point>?>? sumData =
           currentBoard.parseCell(currentBoard.parseLocation);
-      print(
-          "Parse location at run $runs is ${currentBoard.parseLocation} and data is ${sumData.toString()}");
+      // print(
+      //     "Parse location at run $runs is ${currentBoard.parseLocation} and data is ${sumData.toString()}");
       if (sumData == null) {
-        print("Not a sum cell at ${currentBoard.parseLocation}");
+        // print("Not a sum cell at ${currentBoard.parseLocation}");
         ++runs;
         currentBoard.updateParsePoint();
         continue;
@@ -263,15 +264,15 @@ class KakuroBoard {
             .referenceBoard[newBoard.parseLocation.x.toInt()]
                 [newBoard.parseLocation.y.toInt()]
             .split(" ")[0]);
-        print("Right sum at ${newBoard.parseLocation.toString()} is $rightSum");
+        // print("Right sum at ${newBoard.parseLocation.toString()} is $rightSum");
         //fill in right sum data
         List<Point> rightCellPoints = sumData[0]!;
         String constraint = "";
         for (Point cellPoint in rightCellPoints) {
           constraint +=
               newBoard.referenceBoard[cellPoint.x as int][cellPoint.y as int];
-          print(
-              "Constarint horizontal at ${newBoard.parseLocation}: $constraint");
+          // print(
+          //     "Constarint horizontal at ${newBoard.parseLocation}: $constraint");
         }
         List<int> rightData =
             KakuroUtils.permuteSum(rightSum, constraint.length, constraint);
@@ -303,8 +304,8 @@ class KakuroBoard {
                 [newBoard.parseLocation.y.toInt()]
             .split(" ")[1]);
         List<Point> leftCellPoints = sumData[1]!;
-        print(
-            "run $runs left sum data at ${newBoard.parseLocation.toString()} is ${leftCellPoints.toString()} with sum $leftSum");
+        // print(
+        //     "run $runs left sum data at ${newBoard.parseLocation.toString()} is ${leftCellPoints.toString()} with sum $leftSum");
         // String constraint = "";
         // for (Point cellPoint in leftCellPoints) {
         //   constraint += rightBoards[0].referenceBoard[cellPoint.x as int]
@@ -321,7 +322,7 @@ class KakuroBoard {
             constraint +=
                 rboard.referenceBoard[cellPoint.x.toInt()][cellPoint.y.toInt()];
           }
-          print("constraint at ${newBoard.parseLocation} is $constraint");
+          // print("constraint at ${newBoard.parseLocation} is $constraint");
           List<int> leftData = // << MOVED INSIDE
               KakuroUtils.permuteSum(leftSum, constraint.length, constraint);
           if (leftData.isEmpty) {
@@ -528,8 +529,8 @@ void runSolveTest() {
     ["15 -1", "0", "0", "0", "0", "13 -1", "0", "0", "-1"],
   ];
 
-  KakuroBoard initialBoard = KakuroBoard(
-      referenceBoard: complexTestBoard, ROW_COUNT: 9, COLUMN_COUNT: 9);
+  KakuroBoard initialBoard =
+      KakuroBoard(referenceBoard: testBoardGrid, ROW_COUNT: 9, COLUMN_COUNT: 9);
 
   print("DEBUG INFO FOR CellInfo.dart:");
 
@@ -565,4 +566,44 @@ void runSolveTest() {
   //   print("\n--- Invalid Board \n ${e.toString()} ---");
   //   print(e);
   // }
+}
+
+void runTimedSolveTest() {
+  List<List<String>> testBoard7cross7 = [
+    ["-1", "-1", "-1 14", "-1 32", "-1 4", "-1 31", "-1"],
+    ["-1", "21 12", "0", "0", "0", "0", "-1 17"],
+    ["32 -1", "0", "5", "9", "3", "0", "0"],
+    ["9 -1", "0", "0", "0", "12 19", "0", "8"],
+    ["-1", "-1 12", "25 12", "0", "3", "0", "0"],
+    ["31 -1", "9", "0", "0", "0", "0", "-1"],
+    ["23 -1", "0", "0", "0", "0", "-1", "-1"]
+  ];
+
+  List<List<String>> testBoardGrid = [
+    ["-1", "-1", "-1", "-1 22", "-1 17"],
+    ["-1", "-1", "16 19", "0", "0"],
+    ["-1", "24 9", "0", "0", "0"],
+    ["22 -1", "0", "0", "0", "-1"],
+    ["5 -1", "0", "0", "-1", "-1"]
+  ];
+  KakuroBoard initialBoard = KakuroBoard(
+      referenceBoard: testBoard7cross7, ROW_COUNT: 7, COLUMN_COUNT: 7);
+  // print("Initial Board for original solve function: \n");
+  // initialBoard.printBoard();
+  // Stopwatch ogSolve = Stopwatch()..start();
+  // KakuroBoard sol = KakuroBoard.solve(initialBoard);
+  // ogSolve.stop();
+  // print("Solution via original solve() function: ");
+  // sol.printBoard();
+  // print("\n${ogSolve.elapsed} time elapsed");
+
+  //cell-based approach
+  print("\n\n Board passed to cellBasedSolve:\n");
+  initialBoard.printBoard();
+  Stopwatch cellBasedSolve = Stopwatch()..start();
+  KakuroBoard sol1 = initialBoard.cellBasedSolve();
+  cellBasedSolve.stop();
+  print("Solution: \n");
+  sol1.printBoard();
+  print("\n${cellBasedSolve.elapsed} time elapsed");
 }
