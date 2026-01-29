@@ -14,6 +14,9 @@ class CellInfo {
   late int
       verticalRunIndex; //stores the index of this point in the horizontal run
   CellInfo({required this.position, required KakuroBoard board}) {
+    if (position == const Point(-1, -1)) {
+      throw InvalidCellException("-1,-1 is not a valid location");
+    }
     String content =
         board.referenceBoard[position.x.toInt()][position.y.toInt()];
     if (content.contains(" ") || content == "-1") {

@@ -7,13 +7,16 @@
 // ignore_for_file: unnecessary_this
 
 import 'dart:collection';
+import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:kakuro_solver/logic/KakuroUtils.dart';
 import 'package:kakuro_solver/models/CellInfo.dart';
 
-void main() {
-  runTimedSolveTest();
+void main() async {
+  await runTimedSolveTest();
+  exit(0);
 }
 
 class KakuroBoard {
@@ -189,28 +192,66 @@ class KakuroBoard {
     return true;
   }
 
+  //This function attempts to solve the board recursively, with a cell based
+  //MRV approach
+  KakuroBoard? solveRecursive(
+      LinkedHashMap<Point, CellInfo> cellMap, int depth) {
+    if (this.isBoardFilled()) return this;
+
+    Point? target = this.mrvSelect(cellMap);
+    if (target == const Point(-1, -1)) {
+      return null;
+    }
+
+    List<int> possibleDigits = this.solveAt(cellMap[target]!);
+
+    String originalValue =
+        this.referenceBoard[target.x.toInt()][target.y.toInt()];
+
+    for (int digit in possibleDigits) {
+      this.referenceBoard[target.x.toInt()][target.y.toInt()] =
+          digit.toString();
+
+      KakuroBoard? result = this.solveRecursive(cellMap, depth + 1);
+
+      if (result != null) {
+        return result;
+      }
+
+      this.referenceBoard[target.x.toInt()][target.y.toInt()] = originalValue;
+    }
+
+    return null;
+  }
+
   //Returns the location of the next cell to be solved for based on the
   //MRV heuristic(Minimum Remaining Values)
   Point mrvSelect(LinkedHashMap<Point, CellInfo> cellMap) {
     int min_choices = 20;
     Point min_location = Point(0, 0);
-    cellMap.forEach((cell_location, cell_info) {
+    for (MapEntry<Point, CellInfo> entry in cellMap.entries) {
+      Point cell_location = entry.key;
+      CellInfo cell_info = entry.value;
       String cell_content =
           this.referenceBoard[cell_location.x.toInt()][cell_location.y.toInt()];
       if (cell_content == "0") {
         int sols_count = this.solveAt(cell_info).length;
+        if (sols_count == 0) {
+          return const Point(-1, -1); // Immediate dead end
+        }
         if (sols_count < min_choices) {
           min_choices = sols_count;
           min_location = cell_location;
         }
       }
-    });
+    }
     return min_location;
   }
 
   //This function solves the board with a cell-based approach
   //instead of a run based one, whilst also employing MRV for
   //cell selection and forward checking.
+  //This approach is iterative
   KakuroBoard cellBasedSolve() {
     LinkedHashMap<Point, CellInfo> cellMap =
         KakuroBoard.buildReferenceMap(this);
@@ -222,7 +263,9 @@ class KakuroBoard {
         return currentBoard;
       }
       Point target = currentBoard.mrvSelect(cellMap);
-      List<int> solns = currentBoard.solveAt(cellMap[target]!);
+      List<int> solns = (target == const Point(-1, -1))
+          ? []
+          : currentBoard.solveAt(cellMap[target]!);
       List<KakuroBoard> sol_boards = List.empty(growable: true);
       for (int soln in solns) {
         KakuroBoard sol_b = KakuroBoard.cloneBoard(currentBoard);
@@ -236,6 +279,18 @@ class KakuroBoard {
 
     throw UnsolvableBoardException("No valid solutions found");
   }
+
+  //Calls the recursive solve function after constructing the cell map.
+  KakuroBoard rsolve() {
+    LinkedHashMap<Point, CellInfo> cellMap =
+        KakuroBoard.buildReferenceMap(this);
+    KakuroBoard reference = KakuroBoard.cloneBoard(this);
+    KakuroBoard? solution = reference.solveRecursive(cellMap, 0);
+    if (solution == null) {
+      throw UnsolvableBoardException("Board cannot be solved");
+    }
+    return solution;
+  }
 }
 
 //an object of this class being thrown indicates that board is unsolvable
@@ -245,7 +300,19 @@ class UnsolvableBoardException implements Exception {
 }
 
 //Run a timed solve test
-void runTimedSolveTest() {
+Future<void> runTimedSolveTest() async {
+  List<List<String>> testBoard9cross9 = [
+    ["-1", "-1", "-1 10", "-1 33", "-1", "-1 15", "-1 10", "-1 12", "-1 22"],
+    ["-1", "5 10", "0", "0", "27 27", "0", "0", "0", "0"],
+    ["36 -1", "0", "0", "0", "0", "0", "0", "0", "0"],
+    ["30 -1", "0", "0", "0", "0", "-1 22", "17 22", "0", "0"],
+    ["-1", "-1", "30 -1", "0", "0", "0", "0", "-1", "-1"],
+    ["-1", "-1 11", "12 20", "0", "0", "0", "0", "-1 8", "-1 6"],
+    ["5 -1", "0", "0", "-1 5", "11 6", "0", "0", "0", "0"],
+    ["38 -1", "0", "0", "0", "0", "0", "0", "0", "0"],
+    ["15 -1", "0", "0", "0", "0", "13 -1", "0", "0", "-1"],
+  ];
+
   List<List<String>> testBoard7cross7 = [
     ["-1", "-1", "-1 14", "-1 32", "-1 4", "-1 31", "-1"],
     ["-1", "21 12", "0", "0", "0", "0", "-1 17"],
@@ -347,14 +414,28 @@ void runTimedSolveTest() {
     ["5 -1", "0", "0", "-1", "-1"]
   ];
   KakuroBoard initialBoard = KakuroBoard(
-      referenceBoard: testBoard7cross7, ROW_COUNT: 7, COLUMN_COUNT: 7);
+      referenceBoard: testBoard8cross8, ROW_COUNT: 8, COLUMN_COUNT: 8);
+//Recursive solution
+  await Isolate.run(() {
+    print("\n\n Board passed to recursive based solve:\n");
+    initialBoard.printBoard();
+    Stopwatch rBasedSolve = Stopwatch()..start();
+    KakuroBoard sol2 = initialBoard.rsolve();
+    rBasedSolve.stop();
+    print("Solution: \n");
+    sol2.printBoard();
+    print("\n${rBasedSolve.elapsed} time elapsed");
+  });
 
-  print("\n\n Board passed to cellBasedSolve:\n");
-  initialBoard.printBoard();
-  Stopwatch cellBasedSolve = Stopwatch()..start();
-  KakuroBoard sol1 = initialBoard.cellBasedSolve();
-  cellBasedSolve.stop();
-  print("Solution: \n");
-  sol1.printBoard();
-  print("\n${cellBasedSolve.elapsed} time elapsed");
+  await Isolate.run(() {
+    //iterative solution
+    print("\n\n Board passed to cellBasedSolve:\n");
+    initialBoard.printBoard();
+    Stopwatch cellBasedSolve = Stopwatch()..start();
+    KakuroBoard sol1 = initialBoard.cellBasedSolve();
+    cellBasedSolve.stop();
+    print("Solution: \n");
+    sol1.printBoard();
+    print("\n${cellBasedSolve.elapsed} time elapsed");
+  });
 }
