@@ -7,16 +7,14 @@
 // ignore_for_file: unnecessary_this
 
 import 'dart:collection';
-import 'dart:io';
-import 'dart:isolate';
+
 import 'dart:math';
 
 import 'package:kakuro_solver/logic/KakuroUtils.dart';
 import 'package:kakuro_solver/models/CellInfo.dart';
 
-void main() async {
-  await runTimedSolveTest();
-  exit(0);
+void main() {
+  runTimedSolveTest();
 }
 
 class KakuroBoard {
@@ -300,7 +298,7 @@ class UnsolvableBoardException implements Exception {
 }
 
 //Run a timed solve test
-Future<void> runTimedSolveTest() async {
+void runTimedSolveTest() {
   List<List<String>> testBoard9cross9 = [
     ["-1", "-1", "-1 10", "-1 33", "-1", "-1 15", "-1 10", "-1 12", "-1 22"],
     ["-1", "5 10", "0", "0", "27 27", "0", "0", "0", "0"],
@@ -415,27 +413,24 @@ Future<void> runTimedSolveTest() async {
   ];
   KakuroBoard initialBoard = KakuroBoard(
       referenceBoard: testBoard8cross8, ROW_COUNT: 8, COLUMN_COUNT: 8);
-//Recursive solution
-  await Isolate.run(() {
-    print("\n\n Board passed to recursive based solve:\n");
-    initialBoard.printBoard();
-    Stopwatch rBasedSolve = Stopwatch()..start();
-    KakuroBoard sol2 = initialBoard.rsolve();
-    rBasedSolve.stop();
-    print("Solution: \n");
-    sol2.printBoard();
-    print("\n${rBasedSolve.elapsed} time elapsed");
-  });
+  //Recursive solution
 
-  await Isolate.run(() {
-    //iterative solution
-    print("\n\n Board passed to cellBasedSolve:\n");
-    initialBoard.printBoard();
-    Stopwatch cellBasedSolve = Stopwatch()..start();
-    KakuroBoard sol1 = initialBoard.cellBasedSolve();
-    cellBasedSolve.stop();
-    print("Solution: \n");
-    sol1.printBoard();
-    print("\n${cellBasedSolve.elapsed} time elapsed");
-  });
+  print("\n\n Board passed to recursive based solve:\n");
+  initialBoard.printBoard();
+  Stopwatch rBasedSolve = Stopwatch()..start();
+  KakuroBoard sol2 = initialBoard.rsolve();
+  rBasedSolve.stop();
+  print("Solution: \n");
+  sol2.printBoard();
+  print("\n${rBasedSolve.elapsed} time elapsed");
+
+  //iterative solution
+  // print("\n\n Board passed to cellBasedSolve:\n");
+  // initialBoard.printBoard();
+  // Stopwatch cellBasedSolve = Stopwatch()..start();
+  // KakuroBoard sol1 = initialBoard.cellBasedSolve();
+  // cellBasedSolve.stop();
+  // print("Solution: \n");
+  // sol1.printBoard();
+  // print("\n${cellBasedSolve.elapsed} time elapsed");
 }
