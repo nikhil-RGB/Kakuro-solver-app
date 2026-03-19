@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kakuro_solver/logic/KakuroBoard.dart';
+import 'package:kakuro_solver/pages/SolverPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,28 +14,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'KakuroSolver',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyanAccent),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Not implemented'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text("Not implemented")),
+      home: SolverPage.buildFromBoard(
+        reference: KakuroBoard(
+            referenceBoard: testBoard7cross7, ROW_COUNT: 7, COLUMN_COUNT: 7),
+      ),
     );
   }
 }
