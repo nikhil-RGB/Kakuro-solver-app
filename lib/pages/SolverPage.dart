@@ -43,13 +43,13 @@ class _SolverPageState extends State<SolverPage> {
 
   Widget buildKakuroGrid() {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(10.0),
       child: GridView.count(
         childAspectRatio: 1,
         shrinkWrap: true,
         crossAxisCount: widget.columns,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
+        crossAxisSpacing: 0.5,
+        mainAxisSpacing: 0.5,
         children: List.generate(widget.columns * widget.rows, (index) {
           int row = (index / widget.columns).floor();
           int col = index % widget.columns;
@@ -67,33 +67,72 @@ class _SolverPageState extends State<SolverPage> {
     required int y,
   }) {
     String content = widget.reference.referenceBoard[x][y];
+    Widget processed_content = processCellContent(content);
     return InkWell(
       onTap: () {
+        if (content == "-1") {
+          return; //Ineligible click
+        }
         setState(() {
           selectedTile = Point(x, y);
         });
       },
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF9CFFC9),
-          borderRadius: BorderRadius.circular(2),
+          color: (content == "-1") ? Colors.grey : Color(0xFF9CFFC9),
+          borderRadius: BorderRadius.circular(1),
           border: Border.all(
             color: (selectedTile.x.toInt() == x && selectedTile.y.toInt() == y)
                 ? Colors.white
                 : Colors.black,
-            width: 1,
+            width: 1.5,
           ),
         ),
         child: Center(
-            child: Text(
-          content,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            color: Colors.black,
-          ),
-        )),
+          child: processed_content,
+        ),
       ),
+    );
+  }
+
+  Widget processCellContent(String content) {
+    if (content.contains(" ")) {
+      List<String> data = content.split(" ");
+      String right = (data[0] == "-1") ? "0" : data[0];
+      String down = (data[1] == "-1") ? "0" : data[1];
+      Widget text_widget = RichText(
+        text: TextSpan(
+          text: null,
+          style: const TextStyle(
+              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+          children: <TextSpan>[
+            TextSpan(text: right),
+            const TextSpan(
+                text: " R ",
+                style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13)),
+            TextSpan(text: down),
+            const TextSpan(
+                text: ' D ',
+                style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13)),
+          ],
+        ),
+      );
+      return text_widget;
+    } else if (content == "-1") {
+      return const Text("");
+    } else if (content == "0") {
+      return const Text("");
+    }
+    return Text(
+      content,
+      style: const TextStyle(
+          color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
     );
   }
 }
