@@ -88,6 +88,10 @@ class _SolverPageState extends State<SolverPage> {
     String content = widget.reference.referenceBoard[x][y];
     Widget processed_content = processCellContent(content);
     return InkWell(
+      onTapDown: _getTapPosition,
+      onLongPress: () {
+        _showContextMenu(context, x, y, content);
+      },
       onTap: () {
         // if (content == "-1") {
         //   return; //Ineligible click
@@ -205,7 +209,67 @@ class _SolverPageState extends State<SolverPage> {
         ],
       );
     }
+    //Before placeholder return add functionality to build editing ui for sum cells.
     //Placeholder return
-    return Container();
+    return const SizedBox.shrink();
+  }
+
+  void _showContextMenu(
+      BuildContext context, int x, int y, String content) async {
+    final RenderObject? overlay =
+        Overlay.of(context).context.findRenderObject();
+    final result = await showMenu(
+      color: Color.fromARGB(255, 150, 201, 255),
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(_tapPosition.dx, _tapPosition.dy, 40, 40),
+        Rect.fromLTWH(0, 0, overlay!.paintBounds.size.width,
+            overlay.paintBounds.size.height),
+      ),
+      items: processItems(x, y, content),
+    );
+  }
+
+  //create pop ups as required by the cell in question
+  List<PopupMenuItem> processItems(int x, int y, String content) {
+    List<PopupMenuItem> popups = [
+      PopupMenuItem(
+        value: 'csum',
+        child: const Text('Convert to Sum Cell'),
+        onTap: () {
+          setState(() {
+            widget.reference.referenceBoard[x][y] = "0 0";
+          });
+        },
+      ),
+      PopupMenuItem(
+        value: 'cblock',
+        child: const Text('Block cell'),
+        onTap: () {
+          setState(() {
+            widget.reference.referenceBoard[x][y] = "-1";
+          });
+        },
+      ),
+      PopupMenuItem(
+        value: 'cog',
+        child: const Text('Convert to standard cell'),
+        onTap: () {
+          setState(() {
+            widget.reference.referenceBoard[x][y] = "0";
+          });
+        },
+      ),
+    ];
+
+    if (int.tryParse(content) != null && int.tryParse(content) != -1) {
+      //standard numeric cell
+      return <PopupMenuItem>[popups[0], popups[1]];
+    } else if (content == "-1") {
+      return <PopupMenuItem>[popups[0], popups[2]];
+    } else {
+      //is already sum cell
+      return <PopupMenuItem>[popups[1], popups[2]];
+    }
   }
 }
