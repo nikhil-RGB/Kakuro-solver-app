@@ -14,6 +14,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'KakuroSolver',
       theme: ThemeData(
+        inputDecorationTheme: const InputDecorationTheme(
+          isDense: true,
+          contentPadding: EdgeInsets.only(top: 0.0, bottom: 0.0),
+        ),
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyanAccent),
         useMaterial3: true,
       ),

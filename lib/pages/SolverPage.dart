@@ -35,7 +35,9 @@ class _SolverPageState extends State<SolverPage> {
   Point selectedTile = const Point(0, 0);
   //This controller is associated with the field value for empty cells
   TextEditingController controller_dvalues = TextEditingController();
-
+  //The controllers below are linked to the horizontal and vertical values.
+  TextEditingController controller_shorizontal = TextEditingController();
+  TextEditingController controller_svertical = TextEditingController();
   //To get tap position for displaying pop up menu
   void _getTapPosition(TapDownDetails details) {
     _tapPosition = details.globalPosition;
@@ -47,15 +49,18 @@ class _SolverPageState extends State<SolverPage> {
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Center(
+          child: SingleChildScrollView(
             child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            buildKakuroGrid(),
-            const Gap(10),
-            buildInputPanel(),
-          ],
-        )),
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                buildKakuroGrid(),
+                const Gap(20),
+                buildInputPanel(),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -97,6 +102,8 @@ class _SolverPageState extends State<SolverPage> {
         //   return; //Ineligible click
         // }
         controller_dvalues.clear();
+        controller_shorizontal.clear();
+        controller_svertical.clear();
         setState(() {
           selectedTile = Point(x, y);
         });
@@ -167,6 +174,47 @@ class _SolverPageState extends State<SolverPage> {
         int.tryParse(current_content) != -1) {
       //This means that the selected cell is empty
       //We have to build a text field that allows inputting a number into the
+      return SizedBox(
+        width: MediaQuery.of(context).size.width * 0.80,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "Input digit here",
+              style: TextStyle(color: Colors.cyanAccent),
+            ),
+            const Gap(6.1),
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.35,
+              child: TextField(
+                onSubmitted: (value) {
+                  if (value == "") {
+                    value = "0";
+                  }
+                  //code here to input the digit
+                  setState(() {
+                    widget.reference.referenceBoard[selectedTile.x.toInt()]
+                        [selectedTile.y.toInt()] = value;
+                    controller_dvalues.clear();
+                  });
+                },
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.cyanAccent),
+                controller: controller_dvalues,
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    //This panel should be rendered if the cell is a sum cell
+    else if (current_content.contains(" ")) {
+      //also remember to set controllers to clear at the correct time
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -174,29 +222,20 @@ class _SolverPageState extends State<SolverPage> {
           SizedBox(
             width: MediaQuery.of(context).size.width * 0.80,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 const Text(
-                  "Input digit here",
+                  "Input R-sum here",
                   style: TextStyle(color: Colors.cyanAccent),
                 ),
-                const Gap(5),
+                const Gap(6.1),
                 SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.51,
+                  width: MediaQuery.of(context).size.width * 0.35,
                   child: TextField(
-                    onSubmitted: (value) {
-                      if (value == "") {
-                        value = "0";
-                      }
-                      //code here to input the digit
-                      setState(() {
-                        widget.reference.referenceBoard[selectedTile.x.toInt()]
-                            [selectedTile.y.toInt()] = value;
-                        controller_dvalues.clear();
-                      });
-                    },
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.cyanAccent),
-                    controller: controller_dvalues,
+                    controller: controller_shorizontal,
                     keyboardType: TextInputType.number,
                     inputFormatters: <TextInputFormatter>[
                       FilteringTextInputFormatter.digitsOnly
@@ -205,7 +244,52 @@ class _SolverPageState extends State<SolverPage> {
                 ),
               ],
             ),
-          )
+          ),
+          const Gap(12),
+          //Second row, vertical sum value entry
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  "Input D-sum here",
+                  style: TextStyle(color: Colors.cyanAccent),
+                ),
+                const Gap(6.1),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.35,
+                  child: TextField(
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.cyanAccent),
+                    controller: controller_svertical,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(16),
+          ElevatedButton(
+              onPressed: () {
+                String right = (controller_shorizontal.text == "")
+                    ? "-1"
+                    : controller_shorizontal.text;
+                String down = (controller_svertical.text == "")
+                    ? "-1"
+                    : controller_svertical.text;
+                setState(() {
+                  widget.reference.referenceBoard[selectedTile.x.toInt()]
+                      [selectedTile.y.toInt()] = right + " " + down;
+                  controller_svertical.clear();
+                  controller_shorizontal.clear();
+                });
+              },
+              child: const Text("Okay")),
         ],
       );
     }
