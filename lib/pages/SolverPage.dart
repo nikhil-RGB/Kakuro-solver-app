@@ -1,4 +1,6 @@
 // ignore_for_file: must_be_immutable
+import 'dart:isolate';
+
 import 'package:gap/gap.dart';
 import 'dart:math';
 
@@ -31,6 +33,7 @@ class SolverPage extends StatefulWidget {
 }
 
 class _SolverPageState extends State<SolverPage> {
+  bool isSolving = false;
   Offset _tapPosition = Offset.zero; //for pop up menu
   Point selectedTile = const Point(0, 0);
   //This controller is associated with the field value for empty cells
@@ -61,6 +64,62 @@ class _SolverPageState extends State<SolverPage> {
             ),
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: IconButton(
+            onPressed: (widget.reference.isBoardFilled() || isSolving)
+                ? null
+                : () async {
+                    if (!widget.reference.isBoardValid()) {
+                      //Invalid board, show snackbar message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Invalid Board. No Solution!'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    //If this point is reached, the board is (most probably) valid. Proceed.
+                    String? error_message;
+
+                    setState(() {
+                      isSolving = true;
+                    });
+                    await Isolate.run(() {
+                      try {
+                        KakuroBoard soln = widget.reference.rsolve();
+
+                        widget.reference = soln;
+                        isSolving = false;
+                      } on UnsolvableBoardException {
+                        error_message = "Board is unsolvable!";
+
+                        isSolving = false;
+                      } catch (e) {
+                        error_message = 'An Error Occurred. Recheck the board!';
+
+                        isSolving = false;
+                      }
+                    });
+                    setState(() {});
+                    if (error_message != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Invalid Board. No Solution!'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+            icon: (isSolving)
+                ? const CircularProgressIndicator(
+                    strokeWidth: 2.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                : const Icon(Icons.start_outlined)),
       ),
     );
   }
@@ -131,27 +190,29 @@ class _SolverPageState extends State<SolverPage> {
       List<String> data = content.split(" ");
       String right = (data[0] == "-1") ? "0" : data[0];
       String down = (data[1] == "-1") ? "0" : data[1];
-      Widget text_widget = RichText(
-        text: TextSpan(
-          text: null,
-          style: const TextStyle(
-              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
-          children: <TextSpan>[
-            TextSpan(text: right),
-            const TextSpan(
-                text: "R ",
-                style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
-            TextSpan(text: down),
-            const TextSpan(
-                text: 'D',
-                style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
-          ],
+      Widget text_widget = Center(
+        child: RichText(
+          text: TextSpan(
+            text: null,
+            style: const TextStyle(
+                color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+            children: <TextSpan>[
+              TextSpan(text: right),
+              const TextSpan(
+                  text: "R \n",
+                  style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12)),
+              TextSpan(text: down),
+              const TextSpan(
+                  text: 'D',
+                  style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12)),
+            ],
+          ),
         ),
       );
       return text_widget;

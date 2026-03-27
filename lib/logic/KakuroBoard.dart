@@ -393,6 +393,70 @@ class KakuroBoard {
     }
     return solution;
   }
+
+  //Check for board validity in this function
+  bool isBoardValid() {
+    //To check if the KakuroBoard is valid, we will need to confirm
+    //that it is possible to fill in solution cells from a singular sum value
+    //we will not be solving it fully, rather, simply checking if individual
+    //horizontal and vertical runs are possible and solvable.
+    int sum_counter = 0;
+    try {
+      for (int i = 0; i < this.ROW_COUNT; ++i) {
+        for (int j = 0; j < this.COLUMN_COUNT; ++j) {
+          Point refLoc = Point(i, j); //reference point
+          List<List<Point>?>? runInfo = this.parseCell(refLoc);
+          if (runInfo == null) {
+            continue; //Not a sum cell
+          }
+
+          int rightSum = int.parse(this.referenceBoard[i][j].split(" ")[0]);
+          int downSum = int.parse(this.referenceBoard[i][j].split(" ")[1]);
+          if (rightSum == -1 && downSum == -1) {
+            return false;
+          }
+          ++sum_counter;
+          //Check for right run.
+          if (runInfo[0] != null) {
+            String constraint = "";
+
+            for (Point loc in runInfo[0]!) {
+              int x = loc.x.toInt();
+              int y = loc.y.toInt();
+              constraint += this.referenceBoard[x][y];
+            }
+            List<int> sols =
+                KakuroUtils.permuteSum(rightSum, constraint.length, constraint);
+            if (sols.isEmpty) {
+              return false;
+            }
+          }
+          //Check for down run.
+          if (runInfo[1] != null) {
+            String constraint = "";
+
+            for (Point loc in runInfo[1]!) {
+              int x = loc.x.toInt();
+              int y = loc.y.toInt();
+              constraint += this.referenceBoard[x][y];
+            }
+            List<int> sols =
+                KakuroUtils.permuteSum(downSum, constraint.length, constraint);
+            if (sols.isEmpty) {
+              return false;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      //Board is invalid,any exception would indicate the board is invalid
+      return false;
+    }
+    if (sum_counter == 0) {
+      return false; //Impossible for a valid kakuro board to have 0 sum cells
+    }
+    return true;
+  }
 }
 
 //an object of this class being thrown indicates that board is unsolvable
