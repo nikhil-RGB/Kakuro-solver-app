@@ -8,6 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kakuro_solver/logic/KakuroBoard.dart';
 
+KakuroBoard? solveBoardInBackground(KakuroBoard board) {
+  try {
+    KakuroBoard soln = board.rsolve();
+    return soln;
+  } catch (e) {
+    return null;
+  }
+}
+
 class SolverPage extends StatefulWidget {
   int rows;
   int columns;
@@ -83,32 +92,25 @@ class _SolverPageState extends State<SolverPage> {
                     }
 
                     //If this point is reached, the board is (most probably) valid. Proceed.
-                    String? error_message;
 
                     setState(() {
                       isSolving = true;
                     });
-                    await Isolate.run(() {
-                      try {
-                        KakuroBoard soln = widget.reference.rsolve();
 
-                        widget.reference = soln;
-                        isSolving = false;
-                      } on UnsolvableBoardException {
-                        error_message = "Board is unsolvable!";
+                    KakuroBoard? solution = await Isolate.run(() {
+                      return solveBoardInBackground(widget.reference);
+                    });
 
-                        isSolving = false;
-                      } catch (e) {
-                        error_message = 'An Error Occurred. Recheck the board!';
-
-                        isSolving = false;
+                    setState(() {
+                      isSolving = false;
+                      if (solution != null) {
+                        widget.reference = solution;
                       }
                     });
-                    setState(() {});
-                    if (error_message != null) {
+                    if (solution == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Invalid Board. No Solution!'),
+                          content: Text("Unsolvable Board"),
                           backgroundColor: Colors.red,
                         ),
                       );
