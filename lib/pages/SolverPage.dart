@@ -58,6 +58,30 @@ class _SolverPageState extends State<SolverPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0.0,
+        actions: [
+          IconButton(
+            tooltip: "Clear Board",
+            onPressed: isSolving
+                ? null
+                : () {
+                    setState(() {
+                      for (int i = 0; i < widget.reference.ROW_COUNT; ++i) {
+                        for (int j = 0;
+                            j < widget.reference.COLUMN_COUNT;
+                            ++j) {
+                          widget.reference.referenceBoard[i][j] = "0";
+                        }
+                      }
+                    });
+                  },
+            icon: const Icon(Icons.restore),
+            color: Colors.cyanAccent,
+          )
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
