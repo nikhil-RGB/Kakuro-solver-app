@@ -1,9 +1,20 @@
 // ignore_for_file: must_be_immutable
 
+import 'package:gap/gap.dart';
 import 'dart:math';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kakuro_solver/logic/KakuroBoard.dart';
+
+KakuroBoard? solveBoardInBackground(KakuroBoard board) {
+  try {
+    KakuroBoard soln = board.rsolve();
+    return soln;
+  } catch (e) {
+    return null;
+  }
+}
 
 class SolverPage extends StatefulWidget {
   int rows;
@@ -30,13 +41,110 @@ class SolverPage extends StatefulWidget {
 }
 
 class _SolverPageState extends State<SolverPage> {
+  bool isSolving = false;
+  Offset _tapPosition = Offset.zero; //for pop up menu
   Point selectedTile = const Point(0, 0);
+  //This controller is associated with the field value for empty cells
+  TextEditingController controller_dvalues = TextEditingController();
+  //The controllers below are linked to the horizontal and vertical values.
+  TextEditingController controller_shorizontal = TextEditingController();
+  TextEditingController controller_svertical = TextEditingController();
+  //To get tap position for displaying pop up menu
+  void _getTapPosition(TapDownDetails details) {
+    _tapPosition = details.globalPosition;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0.0,
+        actions: [
+          IconButton(
+            tooltip: "Clear Board",
+            onPressed: isSolving
+                ? null
+                : () {
+                    setState(() {
+                      for (int i = 0; i < widget.reference.ROW_COUNT; ++i) {
+                        for (int j = 0;
+                            j < widget.reference.COLUMN_COUNT;
+                            ++j) {
+                          widget.reference.referenceBoard[i][j] = "0";
+                        }
+                      }
+                    });
+                  },
+            icon: const Icon(Icons.restore),
+            color: Colors.cyanAccent,
+          )
+        ],
+      ),
       body: SafeArea(
-        child: Center(child: buildKakuroGrid()),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                buildKakuroGrid(),
+                const Gap(20),
+                buildInputPanel(),
+              ],
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: IconButton(
+            onPressed: (widget.reference.isBoardFilled() || isSolving)
+                ? null
+                : () async {
+                    if (!widget.reference.isBoardValid()) {
+                      //Invalid board, show snackbar message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Invalid Board. No Solution!'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    //If this point is reached, the board is (most probably) valid. Proceed.
+
+                    setState(() {
+                      isSolving = true;
+                    });
+                    final KakuroBoard input = widget.reference;
+
+                    KakuroBoard? solution =
+                        await compute(solveBoardInBackground, input);
+
+                    setState(() {
+                      isSolving = false;
+                      if (solution != null) {
+                        widget.reference = solution;
+                      }
+                    });
+                    if (solution == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Unsolvable Board"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+            icon: (isSolving)
+                ? const CircularProgressIndicator(
+                    strokeWidth: 2.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                : const Icon(Icons.start_outlined)),
       ),
     );
   }
@@ -69,10 +177,17 @@ class _SolverPageState extends State<SolverPage> {
     String content = widget.reference.referenceBoard[x][y];
     Widget processed_content = processCellContent(content);
     return InkWell(
+      onTapDown: _getTapPosition,
+      onLongPress: () {
+        _showContextMenu(context, x, y, content);
+      },
       onTap: () {
-        if (content == "-1") {
-          return; //Ineligible click
-        }
+        // if (content == "-1") {
+        //   return; //Ineligible click
+        // }
+        controller_dvalues.clear();
+        controller_shorizontal.clear();
+        controller_svertical.clear();
         setState(() {
           selectedTile = Point(x, y);
         });
@@ -100,27 +215,29 @@ class _SolverPageState extends State<SolverPage> {
       List<String> data = content.split(" ");
       String right = (data[0] == "-1") ? "0" : data[0];
       String down = (data[1] == "-1") ? "0" : data[1];
-      Widget text_widget = RichText(
-        text: TextSpan(
-          text: null,
-          style: const TextStyle(
-              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
-          children: <TextSpan>[
-            TextSpan(text: right),
-            const TextSpan(
-                text: " R ",
-                style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13)),
-            TextSpan(text: down),
-            const TextSpan(
-                text: ' D ',
-                style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13)),
-          ],
+      Widget text_widget = Center(
+        child: RichText(
+          text: TextSpan(
+            text: null,
+            style: const TextStyle(
+                color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+            children: <TextSpan>[
+              TextSpan(text: right),
+              const TextSpan(
+                  text: "R \n",
+                  style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12)),
+              TextSpan(text: down),
+              const TextSpan(
+                  text: 'D',
+                  style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12)),
+            ],
+          ),
         ),
       );
       return text_widget;
@@ -134,5 +251,195 @@ class _SolverPageState extends State<SolverPage> {
       style: const TextStyle(
           color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
     );
+  }
+
+  Widget buildInputPanel() {
+    String current_content = widget.reference
+        .referenceBoard[selectedTile.x.toInt()][selectedTile.y.toInt()];
+    if (int.tryParse(current_content) != null &&
+        int.tryParse(current_content) != -1) {
+      //This means that the selected cell is empty
+      //We have to build a text field that allows inputting a number into the
+      return SizedBox(
+        width: MediaQuery.of(context).size.width * 0.80,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "Input digit here",
+              style: TextStyle(color: Colors.cyanAccent),
+            ),
+            const Gap(6.1),
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.35,
+              child: TextField(
+                onSubmitted: (value) {
+                  if (value == "") {
+                    value = "0";
+                  }
+                  //code here to input the digit
+                  setState(() {
+                    widget.reference.referenceBoard[selectedTile.x.toInt()]
+                        [selectedTile.y.toInt()] = value;
+                    controller_dvalues.clear();
+                  });
+                },
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.cyanAccent),
+                controller: controller_dvalues,
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    //This panel should be rendered if the cell is a sum cell
+    else if (current_content.contains(" ")) {
+      //also remember to set controllers to clear at the correct time
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  "Input R-sum here",
+                  style: TextStyle(color: Colors.cyanAccent),
+                ),
+                const Gap(6.1),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.35,
+                  child: TextField(
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.cyanAccent),
+                    controller: controller_shorizontal,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(12),
+          //Second row, vertical sum value entry
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  "Input D-sum here",
+                  style: TextStyle(color: Colors.cyanAccent),
+                ),
+                const Gap(6.1),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.35,
+                  child: TextField(
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.cyanAccent),
+                    controller: controller_svertical,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(16),
+          ElevatedButton(
+              onPressed: () {
+                String right = (controller_shorizontal.text == "")
+                    ? "-1"
+                    : controller_shorizontal.text;
+                String down = (controller_svertical.text == "")
+                    ? "-1"
+                    : controller_svertical.text;
+                setState(() {
+                  widget.reference.referenceBoard[selectedTile.x.toInt()]
+                      [selectedTile.y.toInt()] = right + " " + down;
+                  controller_svertical.clear();
+                  controller_shorizontal.clear();
+                });
+              },
+              child: const Text("Okay")),
+        ],
+      );
+    }
+    //Before placeholder return add functionality to build editing ui for sum cells.
+    //Placeholder return
+    return const SizedBox.shrink();
+  }
+
+  void _showContextMenu(
+      BuildContext context, int x, int y, String content) async {
+    final RenderObject? overlay =
+        Overlay.of(context).context.findRenderObject();
+    final result = await showMenu(
+      color: Color.fromARGB(255, 150, 201, 255),
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(_tapPosition.dx, _tapPosition.dy, 40, 40),
+        Rect.fromLTWH(0, 0, overlay!.paintBounds.size.width,
+            overlay.paintBounds.size.height),
+      ),
+      items: processItems(x, y, content),
+    );
+  }
+
+  //create pop ups as required by the cell in question
+  List<PopupMenuItem> processItems(int x, int y, String content) {
+    List<PopupMenuItem> popups = [
+      PopupMenuItem(
+        value: 'csum',
+        child: const Text('Convert to Sum Cell'),
+        onTap: () {
+          setState(() {
+            widget.reference.referenceBoard[x][y] = "0 0";
+          });
+        },
+      ),
+      PopupMenuItem(
+        value: 'cblock',
+        child: const Text('Block cell'),
+        onTap: () {
+          setState(() {
+            widget.reference.referenceBoard[x][y] = "-1";
+          });
+        },
+      ),
+      PopupMenuItem(
+        value: 'cog',
+        child: const Text('Convert to standard cell'),
+        onTap: () {
+          setState(() {
+            widget.reference.referenceBoard[x][y] = "0";
+          });
+        },
+      ),
+    ];
+
+    if (int.tryParse(content) != null && int.tryParse(content) != -1) {
+      //standard numeric cell
+      return <PopupMenuItem>[popups[0], popups[1]];
+    } else if (content == "-1") {
+      return <PopupMenuItem>[popups[0], popups[2]];
+    } else {
+      //is already sum cell
+      return <PopupMenuItem>[popups[1], popups[2]];
+    }
   }
 }
