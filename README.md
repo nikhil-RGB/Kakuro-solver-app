@@ -47,17 +47,13 @@ The solver implements a **cell-based MRV (Minimum Remaining Values) selection he
 4. **In-Place Modification**: Single board reused throughout search, minimizing allocations
 <br/>
 
-###  Final Goal
-
-The ultimate goal is a complete Flutter application where users can:
-
-1.  Input or load a Kakuro puzzle into an interactive graphical interface.
-2.  Trigger the solver with a single click.
-3.  View the complete solution with run sum verification.
-4.  Export/import puzzles for sharing(Planned future idea).
-
 The project combines a **robust, optimized solving algorithm** with a **clean, intuitive user interface**.
 
----
+### Screenshots:
 
-*Built with Flutter & Dart • Contributions welcome!*
+| Welcome | Editor | Solved |
+| :---: | :---: | :---: |
+| <img width="200" src="https://github.com/user-attachments/assets/2362914d-9cc1-48f3-a0fe-e13aac764fd1" /> | <img width="200" src="https://github.com/user-attachments/assets/f9c1aa4b-6488-46ca-a631-d05fbc21a576" /> | <img width="200" src="https://github.com/user-attachments/assets/bc3a5017-e64e-43c4-b140-4174b7a511b8" /> |
+
+
+
